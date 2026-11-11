@@ -23,108 +23,20 @@ body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"H
 #teams{--s:40px;flex:1;min-height:0;display:grid;grid-template-rows:minmax(0,1fr);border-top:1px solid var(--line)}
 .col{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;border-right:1px solid var(--line)}
 .col:last-child{border-right:0}
-.col select{appearance:none;-webkit-appearance:none;background:none;border:0;border-bottom:1px solid var(--line);color:var(--fg);font:inherit;font-size:15px;font-weight:600;text-align:center;text-align-last:center;padding:12px 4px;width:100%;border-radius:0}
+[hidden]{display:none!important}
+.name{display:flex;justify-content:center;align-items:center;gap:7px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--fg);font:inherit;font-size:15px;font-weight:600;padding:12px 4px;width:100%;border-radius:0}
+.name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.name::after{content:"";flex:none;width:5px;height:5px;border-right:1.5px solid var(--mut);border-bottom:1.5px solid var(--mut);transform:rotate(45deg) translateY(-2px)}
+#bd{position:fixed;inset:0;z-index:19}
+#menu{position:fixed;z-index:20;background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);overflow:hidden}
+.opt{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;border-bottom:1px solid var(--line);color:var(--fg);font:inherit;font-size:15px;padding:13px 16px;text-align:left}
+.opt.cur{font-weight:600}
+.opt i{font-style:normal;color:var(--mut)}
+.cus{display:flex;gap:8px;padding:10px 12px}
+.cus input{flex:1;min-width:0;background:none;border:1px solid var(--line);border-radius:8px;color:var(--fg);font:inherit;font-size:16px;padding:8px 10px}
+.ok{background:var(--fg);color:var(--bg);border:0;border-radius:8px;font:inherit;font-size:14px;padding:0 14px}
 .board{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;padding:6px 0;cursor:pointer;overflow:hidden}
 .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
 .sec{display:flex;flex-direction:column;align-items:center;gap:calc(var(--s)*.08)}
 svg{width:var(--s);height:var(--s);display:block}
-.foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;border-top:1px solid var(--line)}
-.foot .num{flex:1 0 100%;text-align:center}
-.falta{background:none;border:1px solid var(--line);color:var(--fg);font:inherit;font-size:13px;height:34px;padding:0 12px;border-radius:17px}
-.falta:disabled{opacity:.35}
-.num{font-size:22px;font-variant-numeric:tabular-nums}
-.num small{color:var(--mut);font-size:13px}
-.minus{background:none;border:1px solid var(--line);color:var(--fg);width:34px;height:34px;border-radius:50%;font-size:20px;line-height:1}
-.win .num{font-weight:700}
-.win .board{opacity:.55}
-</style>
-</head>
-<body>
-<div id="app">
-  <div class="bar">
-    <div class="seg" id="modes"></div>
-    <div class="seg" id="tcount"></div>
-    <div style="display:flex;gap:6px"><button class="rst" id="fs" aria-label="Pantalla completa">⛶</button><button class="rst" id="reset" aria-label="Reiniciar">↺</button></div>
-  </div>
-  <div id="teams"></div>
-</div>
-<script>
-(function(){
-var PRESETS=['Nosotros','Ellos','Yo','Él'];
-var MODES={
-  15:[{n:'Buenas',s:[5,5,5]}],
-  18:[{n:'Malas',s:[5,4]},{n:'Buenas',s:[5,4]}],
-  30:[{n:'Malas',s:[5,5,5]},{n:'Buenas',s:[5,5,5]}]
-};
-var st={mode:18,teams:2,names:['Nosotros','Ellos','Él'],pts:[0,0,0]};
-try{var raw=localStorage.getItem('truco-v1');if(raw){var o=JSON.parse(raw);if(o&&MODES[o.mode])st=o;}}catch(e){}
-function save(){try{localStorage.setItem('truco-v1',JSON.stringify(st));}catch(e){}}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
-
-var L=[[10,10,90,10],[90,10,90,90],[90,90,10,90],[10,90,10,10],[10,90,90,10]];
-function sq(c,size){
-  var h='<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round" stroke-width="7">';
-  for(var k=0;k<2;k++)for(var i=0;i<size;i++){if((i<c)!==(k===1))continue;var l=L[i];h+='<line x1="'+l[0]+'" y1="'+l[1]+'" x2="'+l[2]+'" y2="'+l[3]+'" stroke="'+(k?'var(--fg)':'var(--line)')+'"/>';}
-  return h+'</svg>';
-}
-function max(){return st.mode;}
-function falta(t){var m=0;for(var i=0;i<st.teams;i++)if(i!==t)m=Math.max(m,st.pts[i]);return Math.max(0,max()-m);}
-function seg(el,vals,cur,fn){
-  el.innerHTML=vals.map(function(v){return '<button class="'+(v===cur?'on':'')+'" data-v="'+v+'">'+v+'</button>';}).join('');
-  Array.prototype.forEach.call(el.children,function(b){b.onclick=function(){fn(+b.dataset.v);};});
-}
-function render(){
-  seg(document.getElementById('modes'),[15,18,30],st.mode,function(v){st.mode=v;for(var i=0;i<3;i++)st.pts[i]=Math.min(st.pts[i],v);save();render();});
-  seg(document.getElementById('tcount'),[2,3],st.teams,function(v){st.teams=v;save();render();});
-  var T=document.getElementById('teams');
-  T.style.gridTemplateColumns='repeat('+st.teams+',minmax(0,1fr))';
-  var h='';
-  for(var t=0;t<st.teams;t++){
-    var p=st.pts[t],off=0,body='';
-    var opts=PRESETS.slice();
-    if(opts.indexOf(st.names[t])<0)opts.push(st.names[t]);
-    var sel='<select data-t="'+t+'" aria-label="Nombre del equipo">'+opts.map(function(n){return '<option value="'+esc(n)+'"'+(n===st.names[t]?' selected':'')+'>'+esc(n)+'</option>';}).join('')+'<option value="__custom">Personalizado…</option></select>';
-    MODES[st.mode].forEach(function(sec){
-      var sh='';
-      sec.s.forEach(function(size){sh+=sq(Math.max(0,Math.min(size,p-off)),size);off+=size;});
-      body+='<div class="lbl">'+sec.n+'</div><div class="sec">'+sh+'</div>';
-    });
-    var win=p>=max();
-    h+='<div class="col'+(win?' win':'')+'">'+sel+'<div class="board" data-t="'+t+'">'+body+'</div><div class="foot"><div class="num">'+p+' <small>/ '+max()+'</small></div><button class="falta" data-t="'+t+'"'+(win||!falta(t)?' disabled':'')+'>falta +'+falta(t)+'</button><button class="minus" data-t="'+t+'" aria-label="Quitar punto">−</button></div></div>';
-  }
-  T.innerHTML=h;
-  Array.prototype.forEach.call(T.querySelectorAll('.board'),function(b){b.onclick=function(){var t=+b.dataset.t;if(st.pts[t]<max()){st.pts[t]++;save();render();}};});
-  Array.prototype.forEach.call(T.querySelectorAll('.minus'),function(b){b.onclick=function(){var t=+b.dataset.t;if(st.pts[t]>0){st.pts[t]--;save();render();}};});
-  Array.prototype.forEach.call(T.querySelectorAll('.falta'),function(b){b.onclick=function(){var t=+b.dataset.t,n=falta(t);if(n>0&&st.pts[t]<max()){st.pts[t]=Math.min(max(),st.pts[t]+n);save();render();}};});
-  Array.prototype.forEach.call(T.querySelectorAll('select'),function(s){s.onchange=function(){
-    var t=+s.dataset.t;
-    if(s.value==='__custom'){var n=prompt('Nombre del equipo');n=n&&n.trim();if(n)st.names[t]=n.slice(0,14);}
-    else st.names[t]=s.value;
-    save();render();
-  };});
-  fit();requestAnimationFrame(fit);
-}
-function fit(){
-  var T=document.getElementById('teams'),b=T.querySelector('.board');if(!b)return;
-  var rows=0,secs=MODES[st.mode].length;
-  MODES[st.mode].forEach(function(s){rows+=s.s.length;});
-  var H=b.clientHeight-12-secs*22-(secs+1)*8;
-  var W=T.clientWidth/st.teams-28;
-  var s=Math.floor(Math.min(W,H/rows*0.92));
-  T.style.setProperty('--s',Math.max(24,s)+'px');
-}
-document.getElementById('reset').onclick=function(){if(confirm('¿Reiniciar el marcador?')){st.pts=[0,0,0];save();render();}};
-var fsb=document.getElementById('fs'),de=document.documentElement;
-var rf=de.requestFullscreen||de.webkitRequestFullscreen;
-if(!rf)fsb.style.display='none';
-else fsb.onclick=function(){try{
-  if(document.fullscreenElement||document.webkitFullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen).call(document);}
-  else rf.call(de);
-}catch(e){}};
-document.addEventListener('fullscreenchange',function(){setTimeout(fit,100);});
-window.addEventListener('resize',fit);
-render();
-})();
-</script>
-</body>
-</html>
+.foot{display:flex;flex-wrap:wrap;align-items:center;justify-conte
